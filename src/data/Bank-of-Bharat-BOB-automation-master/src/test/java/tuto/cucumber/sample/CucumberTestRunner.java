@@ -6,9 +6,10 @@ import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-        features = "src/test/resources/features",
+        features = "D:\\WFHackathon\\trial\\test-pilots\\src\\data\\Bank-of-Bharat-BOB-automation-master\\target\\test-classes\\features",
         glue = "tuto.cucumber.sample.steps",
-        tags= "@test"
+        tags= "@test",
+        plugin = { "pretty", "html:target/cucumber-reports.html" }
 )
 public class CucumberTestRunner {
 

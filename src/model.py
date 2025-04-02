@@ -4,7 +4,7 @@ import google.generativeai as genai
 import os
 from google.generativeai import GenerativeModel
 
-from utils import clean_extract_queries, run_queries
+from utils import clean_extract_queries, run_queries, store_api_data
 
 GENAI_API_KEY = "AIzaSyBguK9HMBNMbVxJwFYn077fb5QMlr8KKsk"  # 🔹 Replace with your key
 genai.configure(api_key=GENAI_API_KEY)
@@ -74,7 +74,7 @@ def generate_dependency_graph(full_code):
     print("DEPENDENCY GRAPH GENERATED!!")
 
 # ✅ STEP 3: Generate API Details using Gemini
-def generate_api_details(full_code):
+def generate_api_details(full_code,all_features):
     """
     Uses Gemini model to extract API details from Java code.
     
@@ -84,8 +84,13 @@ def generate_api_details(full_code):
     Returns:
         dict: Extracted API data.
     """
+    scenarios_str = ", ".join(all_features)
+    print("JANFJIDFBIDF",all_features)
     system_prompt = """
-    You are an AI expert in analyzing code of financial applications. Extract API details from the given codebase and return structured JSON output.
+    You are an AI expert in analyzing code of financial applications. Extract API details from the given codebase and return structured JSON output. Also
+    map the test scenarios from the given features list to the corresponding API detail and add them in existing_scenarios field. If there are no existing scenarios
+    still have that field as empty list so that scenarios can be added in the future. Not necessary that the scenario should exactly belong to that API it can be somewhat related 
+    also you can add it.
 
     Return JSON in this format:
     {
@@ -98,17 +103,18 @@ def generate_api_details(full_code):
           "dependencies": [...],
           "description": "...",
           "businessRules": "..."
+          "existing_scenarios":[...]
         }
       ]
     }
     """
     
-    response = model.generate_content(f"{system_prompt}\nHere is the full Java code:\n{full_code}")
+    response = model.generate_content(f"{system_prompt}\nHere is the full Java code:\n{full_code} and the existing test scenarios {scenarios_str}")
 
     try:
         response_json = re.sub(r'```json|```', '', response.text).strip()
-        api_dict = json.loads(response_json)
-        formatted_json = json.dumps(api_dict, indent=4)
+        api_dict = json.loads(response_json)   #converts to dictionary
+        formatted_json = json.dumps(api_dict, indent=4)  #dict back to json
         return formatted_json , api_dict
     except json.JSONDecodeError:
         print("❌ Failed to parse JSON response. Returned as string.")
@@ -150,7 +156,28 @@ def generate_bdd_scenarios(api_data):
     """
 
     model = GenerativeModel("gemini-1.5-flash")
-    response = model.generate_content(f"{system_prompt}\nAPI Data:\n{api_data}")
+
+    print(type(api_data))
+    for api_detail in api_data["apis"]:
+        api_text = json.dumps(api_detail, indent=4)
+        response = model.generate_content(f"{system_prompt}\nAPI Data:\n{api_text}")
+        scenario_headlines = re.findall(r"Scenario:\s*(.*)", response.text)
+
+        # Ensure 'existing_scenarios' key exists in api_detail
+        if "existing_scenarios" not in api_detail:
+            api_detail["existing_scenarios"] = []
+
+        # Append new scenarios only if they don’t already exist
+        for scenario in scenario_headlines:
+            if scenario not in json.dumps(api_detail.get("existing_scenarios", [])):
+                api_detail["existing_scenarios"].append(scenario)
+
+        
+
+    print("WITH SCENARIOS",api_data)
+    store_api_data(api_data)
+
+    print("✅ Updated API details with existing scenarios!")
 
     return response.text
 

@@ -2,126 +2,70 @@
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 import static io.restassured.RestAssured.given;
 
-
 public class WalletRequests {
 
-    private static final Logger logger = LogManager.getLogger(WalletRequests.class);
-    private String baseUrl;
+    private String apiBaseUrl = "YOUR_API_ENDPOINT"; // Replace with your actual API base URL
 
-    public WalletRequests(String baseUrl) {
-        this.baseUrl = baseUrl;
-        RestAssured.baseURI = baseUrl;
-    }
+    public String transferMoney(String senderAccountNumber, String recipientAccountNumber, int amount) {
+        RequestSpecification request = RestAssured.given()
+                .contentType("application/json")
+                .body(new JSONObject()
+                        .put("senderAccountNumber", senderAccountNumber)
+                        .put("recipientAccountNumber", recipientAccountNumber)
+                        .put("amount", amount)
+                        .toString());
 
-    public Response post(String endpoint, Object requestBody) {
-        logger.info("Making a POST request to: " + endpoint);
-        RequestSpecification request = given().contentType("application/json").body(requestBody);
-        return request.post(endpoint);
-    }
+        Response response = request.post(apiBaseUrl + "/transfer"); // Adjust the endpoint as needed
 
-    public Response put(String endpoint, Object requestBody) {
-        logger.info("Making a PUT request to: " + endpoint);
-        RequestSpecification request = given().contentType("application/json").body(requestBody);
-        return request.put(endpoint);
+        return response.asString();
     }
 
 
-    public Response get(String endpoint) {
-        logger.info("Making a GET request to: " + endpoint);
-        return given().get(endpoint);
+    public int getStatusCode() {
+        return RestAssured.last().getStatusCode();
     }
 
-    public Response delete(String endpoint) {
-        logger.info("Making a DELETE request to: " + endpoint);
-        return given().delete(endpoint);
-    }
+    // Add other API request methods as needed.  Example for getting balance:
+    public String getBalance(String accountNumber){
+        RequestSpecification request = RestAssured.given()
+                .contentType("application/json")
+                .param("accountNumber", accountNumber); //Using query parameter for account number.  Adjust as needed.
 
+        Response response = request.get(apiBaseUrl + "/balance"); // Adjust the endpoint as needed
 
-    // Example methods tailored to specific API calls (replace with your actual API endpoints and request/response objects)
-
-    public Response createUser(String endpoint, Object userRequest) {
-        return post(endpoint, userRequest);
-    }
-
-    public Response updateAccount(String accountNumber, Object accountUpdateRequest) {
-        String endpoint = "/accounts/" + accountNumber; // Example endpoint structure
-        return put(endpoint, accountUpdateRequest);
-    }
-
-    public Response getAccountDetails(String accountNumber, String ifscCode, String password) {
-        String endpoint = "/accounts/" + accountNumber + "?ifsc=" + ifscCode + "&password=" + password; // Example endpoint
-        return get(endpoint);
-    }
-
-    public Response deleteAccount(String accountNumber, String password) {
-        String endpoint = "/accounts/" + accountNumber + "?password=" + password; // Example endpoint
-        return delete(endpoint);
-    }
-
-    public Response getBalance(String accountNumber, String password) {
-        String endpoint = "/accounts/" + accountNumber + "/balance?password=" + password; //Example endpoint
-        return get(endpoint);
-    }
-
-    public Response creditAccount(String accountNumber, String password, Object creditCredential) {
-        String endpoint = "/accounts/" + accountNumber + "/credit?password=" + password; //Example endpoint
-        return post(endpoint, creditCredential);
-    }
-
-    public Response debitAccount(String accountNumber, String password, Object debitCredential) {
-        String endpoint = "/accounts/" + accountNumber + "/debit?password=" + password; // Example endpoint
-        return post(endpoint, debitCredential);
-    }
-
-    public Response transferMoney(Object transferMoneyRequest) {
-        String endpoint = "/transfers"; // Example endpoint
-        return post(endpoint, transferMoneyRequest);
-    }
-
-    public Response getTransactionHistory(String accountNumber, String password) {
-        String endpoint = "/accounts/" + accountNumber + "/transactions?password=" + password; //Example endpoint
-        return get(endpoint);
+        return response.asString();
     }
 
 
-    public Response createUPI(String accountNumber, String password, Object upiRequest) {
-        String endpoint = "/accounts/" + accountNumber + "/upi?password=" + password; // Example endpoint
-        return post(endpoint, upiRequest);
-    }
-
-    public Response getUPI(String accountNumber, String password) {
-        String endpoint = "/accounts/" + accountNumber + "/upi?password=" + password; // Example endpoint
-        return get(endpoint);
-    }
-
-    public Response addMoneyToUPI(String accountNumber, String password, Object addMoneyRequest) {
-        String endpoint = "/accounts/" + accountNumber + "/upi/add?password=" + password; // Example endpoint
-        return post(endpoint, addMoneyRequest);
-    }
-
-    public Response addMoneyFromUPIToAccount(String accountNumber, String password, Object addMoneyRequest) {
-        String endpoint = "/accounts/" + accountNumber + "/upi/addFromUPI?password=" + password; // Example endpoint
-        return post(endpoint, addMoneyRequest);
-    }
-
-    public Response createNetBanking(String accountNumber, String password, Object netBankingRequest) {
-        String endpoint = "/accounts/" + accountNumber + "/netbanking?password=" + password; // Example endpoint
-        return post(endpoint, netBankingRequest);
-    }
-
-    public Response getNetBanking(String accountNumber, String password) {
-        String endpoint = "/accounts/" + accountNumber + "/netbanking?password=" + password; // Example endpoint
-        return get(endpoint);
-    }
-
-    public Response updateAmountManually(String accountNumber, String password, Object updateAmountRequest){
-        String endpoint = "/accounts/" + accountNumber + "/manualUpdate?password=" + password; //Example endpoint
-        return post(endpoint, updateAmountRequest);
-    }
 }
 ```
+
+**To use this with your existing code:**
+
+1.  **Replace `YOUR_API_ENDPOINT`:** Update `apiBaseUrl` in `WalletRequests.java` with the correct base URL of your API.  For example: `"http://localhost:8080/api/v1"`.
+2.  **Adjust Endpoints:** Modify the endpoint paths (e.g., `/transfer`, `/balance`) in the `transferMoney` and `getBalance` methods to accurately reflect the routes in your API.
+3.  **Add Dependencies:** Make sure you have the `io.rest-assured` dependency in your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <version>5.3.0</version> <!-- Use the latest version -->
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20230618</version>
+</dependency>
+
+```
+
+4.  **Replace `Requests` with `WalletRequests`:** In your `StepDefinitions.java`, change `requests = new Requests();` to `requests = new WalletRequests();`.
+
+
+This improved `WalletRequests.java` leverages REST-assured for cleaner, more maintainable, and more efficient API interaction.  The example `getBalance` method shows how easily you can add more API calls as needed. Remember to handle potential exceptions (e.g., `IOException`) appropriately in your `StepDefinitions` or `WalletRequests` class, as needed.  Consider adding more robust error handling in your `WalletRequests` methods to check for various HTTP status codes and provide more informative error messages.

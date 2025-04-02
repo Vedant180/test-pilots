@@ -1,11 +1,9 @@
 package tuto.cucumber.sample.steps;
-
 import io.cucumber.java.en.*;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 import io.restassured.response.Response;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,7 +35,7 @@ public class CreateAccountSteps {
                 .header("Content-Type", "application/json")
                 .body(requestBody)
                 .when()
-                .post("http://localhost:54789/finance/v1/bank/v4/bharat/create-account"); // Replace with actual URL
+                .post("http://localhost:45785/finance/v1/bank/v4/bharat/create-account"); // Replace with actual URL
     }
 
     @Then("the account should be created successfully")
@@ -86,4 +84,5 @@ public class CreateAccountSteps {
         requestBody.put("country", "USA");
         requestBody.put("accountType", "Savings");
     }
+
 }

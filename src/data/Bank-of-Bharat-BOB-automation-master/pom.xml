@@ -26,14 +26,8 @@
 			<groupId>com.syc.finance.v1.bharat</groupId>
 			<artifactId>Bank-of-Bharat-BOB</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
+			<classifier>library</classifier> <!-- Use the same classifier here -->
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>com.syc.finance.v1.bharat</groupId>-->
-<!--			<artifactId>Bank-of-Bharat-BOB</artifactId>-->
-<!--			<version>0.0.1-SNAPSHOT</version>-->
-<!--			<scope>system</scope>-->
-<!--			<systemPath>C:/Users/vedant/.m2/repository/com/syc/finance/v1/bharat/Bank-of-Bharat-BOB/0.0.1-SNAPSHOT/Bank-of-Bharat-BOB-0.0.1-SNAPSHOT.jar</systemPath>-->
-<!--		</dependency>-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -72,6 +66,12 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.2</version> <!-- Ensure JUnit 4 is included -->
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
@@ -99,6 +99,23 @@
 						</exclude>
 					</excludes>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M5</version>
+				<configuration>
+					<includes>
+						<include>**/CucumberTestRunner.java</include> <!-- Specify your test runner class -->
+					</includes>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

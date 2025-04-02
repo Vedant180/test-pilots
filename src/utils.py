@@ -65,6 +65,90 @@ def get_repo_changes():
     
     return get_changes(old_sha, new_sha)
 
+def extract_existing_features(repo_url):
+    """
+    Downloads a GitHub repository as a ZIP file, extracts it, and reads all `.feature` files to extract the scenarios.
+
+    Args:
+        repo_url (str): GitHub repository URL.
+
+    Returns:
+        list: List of all features (scenario names) in the repository's `.feature` files.
+    """
+    
+    # Ensure the data folder exists inside src
+    DATA_DIR = "src/data"
+    os.makedirs(DATA_DIR, exist_ok=True)  # Create if not exists
+
+    # Generate paths
+    repo_name = repo_url.rstrip("/").split("/")[-1]  # Extract repo name
+    zip_path = os.path.join(DATA_DIR, f"{repo_name}.zip")
+    extract_path = os.path.join(DATA_DIR, repo_name)
+
+    # GitHub zip URL
+    ZIP_URL = f"{repo_url}/archive/refs/heads/master.zip"
+
+    # Download the ZIP file if not already downloaded
+    if not os.path.exists(zip_path):
+        print("⏳ Downloading repository...")
+        response = requests.get(ZIP_URL, stream=True)
+        
+        if response.status_code == 200:
+            with open(zip_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=1024):
+                    f.write(chunk)
+            print("✅ Repository downloaded successfully.")
+        else:
+            print(f"❌ Failed to download repository. Status Code: {response.status_code}")
+            return []
+
+    # Extract the ZIP file
+    if not os.path.exists(extract_path):
+        print("⏳ Extracting repository...")
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(DATA_DIR)
+        print("✅ Repository extracted successfully.")
+
+    # List files in the repo to verify
+    extracted_folder = os.path.join(DATA_DIR, f"{repo_name}-master")  # Adjusting for GitHub's naming convention
+    if not os.path.exists(extracted_folder):
+        print(f"❌ Extraction failed! Folder {extracted_folder} not found.")
+        return []
+
+    print("📁 Repo contents:", os.listdir(extracted_folder))
+
+    features_dir = os.path.join(extracted_folder, "src/test/resources/features")
+    if not os.path.exists(features_dir):
+        print(f"❌ Feature directory {features_dir} not found.")
+        return []
+
+    print("📂 Feature files directory found:", features_dir)
+
+    # Read .feature files and extract scenarios
+    def read_feature_files(features_path):
+        feature_scenarios = []
+        for root, _, files in os.walk(features_path):
+            for file in files:
+                if file.endswith(".feature"):
+                    file_path = os.path.join(root, file)
+                    print(f"🔍 Reading: {file_path}")  # Debugging log
+                    
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.readlines()
+                    
+                    # Extract scenarios (handling indentation)
+                    for line in content:
+                        line = line.strip()  # Remove spaces/tabs
+                        if line.startswith("Scenario:"):
+                            scenario_name = line.replace("Scenario:", "").strip()
+                            feature_scenarios.append(scenario_name)
+        
+        return feature_scenarios
+
+    features = read_feature_files(features_dir)
+
+    print(f"✅ Extracted {len(features)} feature scenarios.")
+    return features
 
 def process_repositories(github_repo, framework):
     """
@@ -185,6 +269,7 @@ def store_api_data(api_json):
 
         # Generate embedding
         embedding = embedding_model.encode(api_text).tolist()
+        existing_scenarios = json.dumps(api.get("existing_scenarios", []))
 
         # Store in ChromaDB
         collection.add(
@@ -195,7 +280,8 @@ def store_api_data(api_json):
                 "responses": json.dumps(api["responses"]),  # Convert dict to string
                 "dependencies": json.dumps(api["dependencies"]),  # Convert list to string
                 "description": api["description"],
-                "businessRules": api["businessRules"]
+                "businessRules": api["businessRules"],
+                "existing_scenarios": existing_scenarios
             }],
             embeddings=[embedding]
         )

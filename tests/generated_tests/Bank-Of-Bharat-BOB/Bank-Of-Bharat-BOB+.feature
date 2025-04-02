@@ -1,137 +1,51 @@
-Feature: Account Management
+Feature: Money Transfer API
 
-  Scenario: Create a new bank account
-    Given a valid user request with unique email and phone number
-    When the "/finance/v1/bank/v4/bharat/create-account" endpoint is called with a POST request
-    Then a 201 status code is returned
-    And a UserResponse containing the new account details is returned
-    And a notification is sent to the user
-
-  Scenario: Update existing bank account details
-    Given an existing bank account with account number "1234567890"
-    And a valid account update request
-    When the "/finance/v1/bank/v4/bharat/update-account-details" endpoint is called with a PUT request
-    Then a 201 status code is returned
-    And an AccountUpdateDetailsResponse confirming the update is returned
-    And a notification is sent to the user
-
-  Scenario: Delete a bank account
-    Given an existing bank account with account number "1234567890"
-    And the correct password
-    When the "/finance/v1/bank/v4/bharat/delete-account" endpoint is called with a DELETE request
-    Then a 202 status code is returned
-    And an AccountDeletedSuccessResponse is returned
-    And a notification is sent to the user
-
-  Scenario: Retrieve bank account details
-    Given an existing bank account with account number "1234567890", IFSC code "SBIN0000001", and password "password123"
-    When the "/finance/v1/bank/v4/bharat/get-account-details/1234567890/SBIN0000001/password123" endpoint is called with a GET request
-    Then a 202 status code is returned
-    And an AccountDetailsResponse containing the account details is returned
-
-  Scenario: Perform a balance enquiry
-    Given an existing bank account with account number "1234567890" and password "password123"
-    And a valid BalanceEnquireyRequest
-    When the "/finance/v1/bank/v4/bharat/balance-enquiry" endpoint is called with a GET request
-    Then a 202 status code is returned
-    And a BalanceEnquiryResponse containing the account balance is returned
-    And a notification is sent to the user
+  Scenario Outline: Successful Money Transfer
+    Given a user with account number "<senderAccountNumber>" and sufficient balance of <senderBalance>
+    And a recipient with account number "<recipientAccountNumber>"
+    When a transfer of <amount> USD is requested from "<senderAccountNumber>" to "<recipientAccountNumber>"
+    Then the transfer should be successful with status code 202
+    And the response should include a TransferMoneyResponse
+    Examples:
+      | senderAccountNumber | recipientAccountNumber | senderBalance | amount |
+      | 1234567890         | 9876543210         | 500           | 100    |
+      | 1122334455         | 5544332211         | 1000          | 50     |
 
 
-Feature: Transaction Management
-
-  Scenario: Credit money to an account
-    Given an existing bank account with account number "1234567890" and sufficient daily transaction limit
-    And a valid CreditCredential
-    When the "/finance/v1/bank/v4/bharat/credit-money" endpoint is called with a GET request
-    Then a 202 status code is returned
-    And a CreditResponse is returned
-    And the account balance is updated
-    And a notification is sent to the user
-
-  Scenario: Debit money from an account
-    Given an existing bank account with account number "1234567890", sufficient balance, and sufficient daily transaction limit
-    And a valid DebitCredential
-    When the "/finance/v1/bank/v4/bharat/debit-money" endpoint is called with a GET request
-    Then a 202 status code is returned
-    And a DebitedResponse is returned
-    And the account balance is updated
-    And a notification is sent to the user
-
-  Scenario: Transfer money between accounts
-    Given two existing bank accounts with sufficient balance in the sender account
-    And a valid TransferMoneyRequest
-    When the "/transfer/v1/banking/v6/process" endpoint is called with a POST request
-    Then a 202 status code is returned
-    And a TransferMoneyResponse is returned
-    And the balances of both accounts are updated
-    And a notification is sent to the user (for high value transactions)
-
-  Scenario: Retrieve transaction history
-    Given an existing bank account with account number "1234567890"
-    When the "/transaction/v1/fetch/transaction-enquiry/1234567890" endpoint is called with a GET request
-    Then a 202 status code is returned
-    And a List<TransactionResponse> containing the transaction history is returned
+  Scenario: Insufficient Funds
+    Given a user with account number "1234567890" and sufficient balance of 100
+    And a recipient with account number "9876543210"
+    When a transfer of 200 USD is requested from "1234567890" to "9876543210"
+    Then the transfer should fail with status code 403
+    And the response should include an ErrorResponses object indicating insufficient funds
 
 
-Feature: UPI Management
-
-  Scenario: Create a UPI ID
-    Given an existing bank account with account number "1234567890" and a valid NetBanking ID
-    And a valid UPIRequest
-    When the "/finance/upi/v1/upi-create" endpoint is called with a POST request
-    Then a 202 status code is returned
-    And a UPIResponse containing the new UPI ID is returned
-    And a notification is sent to the user
-
-  Scenario: Retrieve UPI details
-    Given an existing UPI ID linked to account number "1234567890"
-    And the correct password
-    When the "/finance/upi/v1/get-upi-details" endpoint is called with a GET request
-    Then a 202 status code is returned
-    And a UPIResponse containing the UPI details is returned
-
-  Scenario: Add money to UPI from bank account
-    Given an existing bank account with sufficient balance and a linked UPI ID
-    And a valid AddMoneyToUPIFromAccountRequest
-    When the "/finance/v1/bank/v4/bharat/add-money-to-upi-from-bank" endpoint is called with a POST request
-    Then a 202 status code is returned
-    And an AddMoneyToUPIFromAccountResponse is returned
-    And the account and UPI balances are updated
-
-  Scenario: Pay money from UPI to bank account
-    Given an existing UPI ID with sufficient balance and a linked bank account
-    And a valid AddMoneyFromAccountToUPIRequest
-    When the "/finance/v1/bank/v4/bharat/pay-money-from-upi" endpoint is called with a POST request
-    Then a 202 status code is returned
-    And an AddMoneyFromAccountToUPIResponse is returned
-    And the UPI and account balances are updated
+  Scenario: Sender Account Not Found
+    Given a user with account number "9999999999" and sufficient balance of 500  
+    And a recipient with account number "9876543210"
+    When a transfer of 100 USD is requested from "9999999999" to "9876543210"
+    Then the transfer should fail with status code 403
+    And the response should include an ErrorResponses object indicating sender account not found
 
 
-Feature: Net Banking
-
-  Scenario: Create a net banking ID
-    Given an existing bank account with account number "1234567890"
-    And a valid netBankingRequest
-    When the "/finance/v1/banking/net-bankingId-create" endpoint is called with a POST request
-    Then a 202 status code is returned
-    And a NetBankingResponse containing the new net banking ID is returned
-    And a notification is sent to the user
-
-  Scenario: Retrieve net banking details
-    Given an existing bank account with account number "1234567890"
-    And a valid GetNetBankingRequest
-    When the "/finance/v1/banking/get-internetBanking-details" endpoint is called with a GET request
-    Then a 202 status code is returned
-    And a NetBankingResponse containing the net banking details is returned
+  Scenario: Recipient Account Not Found
+    Given a user with account number "1234567890" and sufficient balance of 500
+    And a recipient with account number "0000000000"
+    When a transfer of 100 USD is requested from "1234567890" to "0000000000"
+    Then the transfer should fail with status code 403
+    And the response should include an ErrorResponses object indicating recipient account not found
 
 
-Feature: Manual Balance Updates
+  Scenario:  Both Sender and Recipient Accounts Not Found
+    Given a user with account number "9999999999" and sufficient balance of 500
+    And a recipient with account number "0000000000"
+    When a transfer of 100 USD is requested from "9999999999" to "0000000000"
+    Then the transfer should fail with status code 403
+    And the response should include an ErrorResponses object indicating both accounts not found (or appropriate error message)
 
-  Scenario: Manually update account balance
-    Given an existing bank account with account number "1234567890"
-    And a valid UpdateAmountManually request
-    When the "/finance/v1/bank/v4/bharat/update/money" endpoint is called with a PUT request
-    Then a 202 status code is returned
-    And an UpdateAmountResponse is returned
-    And the account balance is updated
+
+  Scenario: Transfer with Zero Amount
+      Given a user with account number "1234567890" and sufficient balance of 500
+      And a recipient with account number "9876543210"
+      When a transfer of 0 USD is requested from "1234567890" to "9876543210"
+      Then the transfer should fail with an appropriate error message.

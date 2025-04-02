@@ -1,0 +1,4 @@
+# Created at 2025-04-02T04:05:46.008
+Boot Manifest-JAR contains absolute paths in classpath 'D:\WFHackathon\trial\test-pilots\src\data\Bank-of-Bharat-BOB-automation-master\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+

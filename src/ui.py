@@ -2,8 +2,9 @@ import streamlit as st
 
 from main import test_repo
 from tests.test_runner import build_main_project, run_cucumber_tests, start_main_project
-from utils import get_repo_changes, process_repositories
+from utils import extract_existing_features, get_repo_changes, process_repositories
 from model import generate_modified_bdd
+import requests
 
 # Title of the app
 st.title("Automation Test Generator")
@@ -23,30 +24,29 @@ if st.button("Start Automation", key="start_automation"):
         if not repo_list:
             st.error("❌ Please enter at least one valid repository URL.")
         else:
+            automation_repos = [url for url in repo_list if "automation" in url.lower()]
+            non_automation_repos = [url for url in repo_list if "automation" not in url.lower()]
+            repo_list = automation_repos + non_automation_repos
+            all_features = []
             # Process each repo
             for repo_url in repo_list:
-                st.write(f"🔄 Processing `{repo_url}`...")
                 
                 # Step 1: Process the repository
-                java_code = process_repositories(repo_url, framework)
-                
-                if java_code:
-                    st.write(f"✅ Successfully processed `{repo_url}`.")
-
-                    if "automation" not in repo_url.lower():
-                        result = test_repo(repo_url, framework)
-                        st.success(f"🚀 {result}")
+                response = requests.get(repo_url)
+                if response.status_code == 200:
+                    if "automation" in repo_url.lower():
+                        st.write(f"🔄 Processing `{repo_url}`...")
+                        features = extract_existing_features(repo_url)
+                        all_features+= features
+                        print("Scenarios",all_features)
                     else:
-                        st.warning(f"⚠️ Skipping testing for `{repo_url}` (contains 'automation').")
+                        st.write(f"🔄 Processing `{repo_url}`...")
+                        print("INELSEEEE",all_features)
+                        test_repo(repo_url, framework,all_features)
+
 
                 else:
                     st.error(f"❌ Failed to process `{repo_url}`.")
-                    
-                    # Step 2: Run automation tests
-                    result = test_repo(repo_url, framework)
-                    
-                    # Display the result
-                    
     else:
         st.error("❌ Please enter at least one repository URL.")
 

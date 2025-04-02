@@ -7,13 +7,17 @@
                 {
                     "name": "userRequest",
                     "type": "UserRequest",
-                    "description": "Details for creating a new account"
+                    "description": "Details for creating a new user account"
                 }
             ],
             "responses": {
                 "201": {
-                    "type": "UserResponse",
-                    "description": "Account created successfully"
+                    "description": "Account created successfully",
+                    "schema": "UserResponse"
+                },
+                "403": {
+                    "description": "Email or phone number already exists",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
@@ -21,8 +25,11 @@
                 "AccountDetailsGenarators",
                 "NotificationsUtility"
             ],
-            "description": "Creates a new bank account.",
-            "businessRules": "Validates email and phone number uniqueness. Generates account number, IFSC code, and password. Sends account creation notification."
+            "description": "Creates a new user account",
+            "businessRules": "Email and phone number must be unique.  Account details are generated (account number, IFSC code, password).",
+            "existing_scenarios": [
+                "Successfully create an account"
+            ]
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/update-account-details",
@@ -31,21 +38,27 @@
                 {
                     "name": "accountDetailsRequest",
                     "type": "AccountUpdatingDetailsRequest",
-                    "description": "Details for updating an existing account"
+                    "description": "Details to update an existing account"
                 }
             ],
             "responses": {
                 "201": {
-                    "type": "AccountUpdateDetailsResponse",
-                    "description": "Account updated successfully"
+                    "description": "Account details updated successfully",
+                    "schema": "AccountUpdateDetailsResponse"
+                },
+                "403": {
+                    "description": "Account not found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "AccountDetailsRepositories",
+                "MapperToUpdateResponse",
                 "NotificationsUtility"
             ],
-            "description": "Updates an existing bank account.",
-            "businessRules": "Validates account existence. Updates account details. Sends account update notification."
+            "description": "Updates an existing user account details",
+            "businessRules": "Account must exist.  Updates specified fields.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/delete-account",
@@ -59,16 +72,21 @@
             ],
             "responses": {
                 "202": {
-                    "type": "AccountDeletedSuccessResponse",
-                    "description": "Account deleted successfully"
+                    "description": "Account deleted successfully",
+                    "schema": "AccountDeletedSuccessResponse"
+                },
+                "403": {
+                    "description": "Account not found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "AccountDetailsRepositories",
                 "NotificationsUtility"
             ],
-            "description": "Deletes a bank account.",
-            "businessRules": "Validates account existence and password. Deletes account. Sends account deletion notification."
+            "description": "Deletes a user account",
+            "businessRules": "Account must exist and password must match.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/get-account-details/{accountNumber}/{IFSCCode}/{password}",
@@ -92,15 +110,20 @@
             ],
             "responses": {
                 "202": {
-                    "type": "AccountDetailsResponse",
-                    "description": "Account details retrieved successfully"
+                    "description": "Account details retrieved successfully",
+                    "schema": "AccountDetailsResponse"
+                },
+                "403": {
+                    "description": "Account not found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "AccountDetailsRepositories"
             ],
-            "description": "Retrieves details of a bank account.",
-            "businessRules": "Validates account existence. Retrieves and returns account details."
+            "description": "Retrieves details of a specific account",
+            "businessRules": "Account must exist and provided credentials must match.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/balance-enquiry",
@@ -109,21 +132,26 @@
                 {
                     "name": "balanceEnquireyRequest",
                     "type": "BalanceEnquireyRequest",
-                    "description": "Details for balance enquiry"
+                    "description": "Account details for balance enquiry"
                 }
             ],
             "responses": {
                 "202": {
-                    "type": "BalanceEnquiryResponse",
-                    "description": "Balance enquiry response"
+                    "description": "Balance enquiry successful",
+                    "schema": "BalanceEnquiryResponse"
+                },
+                "403": {
+                    "description": "Account not found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "AccountDetailsRepositories",
                 "NotificationsUtility"
             ],
-            "description": "Performs a balance enquiry.",
-            "businessRules": "Validates account existence and password. Retrieves and returns account balance. Sends balance enquiry notification."
+            "description": "Performs a balance enquiry for a given account",
+            "businessRules": "Account must exist and password must match.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/credit-money",
@@ -137,8 +165,12 @@
             ],
             "responses": {
                 "202": {
-                    "type": "CreditResponse",
-                    "description": "Credit response"
+                    "description": "Money credited successfully",
+                    "schema": "CreditResponse"
+                },
+                "403": {
+                    "description": "Account not found or daily limit exceeded",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
@@ -147,23 +179,28 @@
                 "AccountlLimitReached",
                 "NotificationsUtility"
             ],
-            "description": "Credits money to an account.",
-            "businessRules": "Validates account existence, password, and daily transaction limit. Credits money, updates balance, and saves transaction history. Sends credit notification."
+            "description": "Credits money to a user's account",
+            "businessRules": "Account must exist, password must match, daily transaction limit must not be exceeded.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/debit-money",
             "method": "GET",
             "parameters": [
                 {
-                    "name": "balanceEnquireyRequest",
+                    "name": "debitCredential",
                     "type": "DebitCredential",
                     "description": "Details for debiting money"
                 }
             ],
             "responses": {
                 "202": {
-                    "type": "DebitedResponse",
-                    "description": "Debit response"
+                    "description": "Money debited successfully",
+                    "schema": "DebitedResponse"
+                },
+                "403": {
+                    "description": "Account not found, insufficient balance, or daily limit exceeded",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
@@ -172,8 +209,9 @@
                 "AccountlLimitReached",
                 "NotificationsUtility"
             ],
-            "description": "Debits money from an account.",
-            "businessRules": "Validates account existence, password, sufficient balance, and daily transaction limit. Debits money, updates balance, and saves transaction history. Sends debit notification."
+            "description": "Debits money from a user's account",
+            "businessRules": "Account must exist, sufficient balance, password must match, daily transaction limit must not be exceeded.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/pay-money-from-upi",
@@ -182,13 +220,17 @@
                 {
                     "name": "addMoneyFromAccountToUPIRequest",
                     "type": "AddMoneyFromAccountToUPIRequest",
-                    "description": "Details for UPI payment"
+                    "description": "Details for paying from UPI"
                 }
             ],
             "responses": {
                 "202": {
-                    "type": "AddMoneyFromAccountToUPIResponse",
-                    "description": "UPI payment response"
+                    "description": "Payment from UPI successful",
+                    "schema": "AddMoneyFromAccountToUPIResponse"
+                },
+                "403": {
+                    "description": "Account or UPI not found, insufficient balance",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
@@ -196,8 +238,9 @@
                 "UPIDetailsRepositories",
                 "AccountlLimitReached"
             ],
-            "description": "Pays money from bank account to UPI.",
-            "businessRules": "Validates account and UPI existence, sufficient balance, and daily transaction limit. Transfers money and updates balances."
+            "description": "Transfers money from a bank account to a UPI account",
+            "businessRules": "Account and UPI ID must exist, sufficient balance.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/add-money-to-upi-from-bank",
@@ -206,13 +249,17 @@
                 {
                     "name": "addMoneyToUPIFromAccountRequest",
                     "type": "AddMoneyToUPIFromAccountRequest",
-                    "description": "Details for adding money to UPI from account"
+                    "description": "Details for adding money to UPI"
                 }
             ],
             "responses": {
                 "202": {
-                    "type": "AddMoneyToUPIFromAccountResponse",
-                    "description": "Add money to UPI response"
+                    "description": "Money added to UPI successfully",
+                    "schema": "AddMoneyToUPIFromAccountResponse"
+                },
+                "403": {
+                    "description": "Account or UPI not found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
@@ -220,8 +267,9 @@
                 "UPIDetailsRepositories",
                 "AccountlLimitReached"
             ],
-            "description": "Adds money to UPI from bank account.",
-            "businessRules": "Validates account and UPI existence, sufficient balance, and daily transaction limit. Transfers money and updates balances."
+            "description": "Adds money to a UPI account from a bank account",
+            "businessRules": "Account and UPI ID must exist, sufficient balance.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/bank/v4/bharat/update/money",
@@ -235,15 +283,78 @@
             ],
             "responses": {
                 "202": {
-                    "type": "UpdateAmountResponse",
-                    "description": "Update amount response"
+                    "description": "Account balance updated successfully",
+                    "schema": "UpdateAmountResponse"
+                },
+                "403": {
+                    "description": "Account not found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "AccountDetailsRepositories"
             ],
-            "description": "Manually updates account balance.",
-            "businessRules": "Validates account existence. Updates account balance."
+            "description": "Manually updates account balance (likely for internal use)",
+            "businessRules": "Account must exist.",
+            "existing_scenarios": []
+        },
+        {
+            "endpoint": "/finance/upi/v1/upi-create",
+            "method": "POST",
+            "parameters": [
+                {
+                    "name": "upiRequest",
+                    "type": "UPIRequest",
+                    "description": "UPI creation request"
+                }
+            ],
+            "responses": {
+                "202": {
+                    "description": "UPI ID created successfully",
+                    "schema": "UPIResponse"
+                },
+                "403": {
+                    "description": "Account not found, UPI ID already exists, or NetBanking ID is missing",
+                    "schema": "ErrorResponses"
+                }
+            },
+            "dependencies": [
+                "AccountDetailsRepositories",
+                "UPIDetailsRepositories",
+                "UPIDGenerater",
+                "NetBankingRepositories",
+                "NotificationsUtility"
+            ],
+            "description": "Creates a UPI ID for a user",
+            "businessRules": "Account must exist, NetBanking ID must exist, UPI ID must be unique.",
+            "existing_scenarios": []
+        },
+        {
+            "endpoint": "/finance/upi/v1/get-upi-details",
+            "method": "GET",
+            "parameters": [
+                {
+                    "name": "upiRequest",
+                    "type": "GetUPIRequest",
+                    "description": "UPI details request"
+                }
+            ],
+            "responses": {
+                "202": {
+                    "description": "UPI details retrieved successfully",
+                    "schema": "UPIResponse"
+                },
+                "403": {
+                    "description": "Details Not Found",
+                    "schema": "ErrorResponses"
+                }
+            },
+            "dependencies": [
+                "UPIDetailsRepositories"
+            ],
+            "description": "Retrieves UPI details for a user",
+            "businessRules": "Account must exist and password must be correct.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/banking/net-bankingId-create",
@@ -252,13 +363,17 @@
                 {
                     "name": "netBankingRequest",
                     "type": "NetBankingRequest",
-                    "description": "Details for creating net banking ID"
+                    "description": "NetBanking creation request"
                 }
             ],
             "responses": {
                 "202": {
-                    "type": "NetBankingResponse",
-                    "description": "Net banking ID creation response"
+                    "description": "NetBanking ID created successfully",
+                    "schema": "NetBankingResponse"
+                },
+                "403": {
+                    "description": "Account not found or NetBanking ID already exists",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
@@ -267,8 +382,9 @@
                 "InternetBankingIdGenerator",
                 "NotificationsUtility"
             ],
-            "description": "Creates a net banking ID.",
-            "businessRules": "Validates account existence. Generates and saves net banking ID. Sends net banking ID creation notification."
+            "description": "Creates a NetBanking ID for a user",
+            "businessRules": "Account must exist, NetBanking ID must be unique.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/finance/v1/banking/get-internetBanking-details",
@@ -277,20 +393,25 @@
                 {
                     "name": "netBankingRequest",
                     "type": "GetNetBankingRequest",
-                    "description": "Details for retrieving net banking information"
+                    "description": "NetBanking details request"
                 }
             ],
             "responses": {
                 "202": {
-                    "type": "NetBankingResponse",
-                    "description": "Net banking information"
+                    "description": "NetBanking details retrieved successfully",
+                    "schema": "NetBankingResponse"
+                },
+                "403": {
+                    "description": "Details Not Found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "NetBankingRepositories"
             ],
-            "description": "Retrieves net banking information.",
-            "businessRules": "Validates account existence. Retrieves and returns net banking information."
+            "description": "Retrieves NetBanking details for a user",
+            "businessRules": "Account must exist.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/transaction/v1/fetch/transaction-enquiry/{accountNumber}",
@@ -304,15 +425,21 @@
             ],
             "responses": {
                 "202": {
-                    "type": "List<TransactionResponse>",
-                    "description": "Transaction history"
+                    "description": "Transaction history retrieved successfully",
+                    "schema": "List<TransactionResponse>"
+                },
+                "403": {
+                    "description": "Account not found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
-                "TransactionHistoryRepository"
+                "TransactionHistoryRepository",
+                "TransactionToTransactionResponse"
             ],
-            "description": "Retrieves transaction history for an account.",
-            "businessRules": "Retrieves and returns transaction history for the given account number."
+            "description": "Retrieves transaction history for a given account",
+            "businessRules": "Account must exist.",
+            "existing_scenarios": []
         },
         {
             "endpoint": "/transfer/v1/banking/v6/process",
@@ -321,69 +448,26 @@
                 {
                     "name": "transferMoneyRequest",
                     "type": "TransferMoneyRequest",
-                    "description": "Details for transferring money between accounts"
+                    "description": "Money transfer request"
                 }
             ],
             "responses": {
                 "202": {
-                    "type": "TransferMoneyResponse",
-                    "description": "Money transfer response"
+                    "description": "Money transfer successful",
+                    "schema": "TransferMoneyResponse"
+                },
+                "403": {
+                    "description": "Sender or recipient account not found",
+                    "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "AccountDetailsRepositories",
                 "NotificationsUtility"
             ],
-            "description": "Transfers money between accounts.",
-            "businessRules": "Validates sender and recipient account existence. Transfers money and updates balances. Sends money transfer notification (high value transactions)."
-        },
-        {
-            "endpoint": "/finance/upi/v1/upi-create",
-            "method": "POST",
-            "parameters": [
-                {
-                    "name": "upiRequest",
-                    "type": "UPIRequest",
-                    "description": "Details for creating UPI ID"
-                }
-            ],
-            "responses": {
-                "202": {
-                    "type": "UPIResponse",
-                    "description": "UPI ID creation response"
-                }
-            },
-            "dependencies": [
-                "AccountDetailsRepositories",
-                "UPIDetailsRepositories",
-                "NetBankingRepositories",
-                "UPIDGenerater",
-                "NotificationsUtility"
-            ],
-            "description": "Creates a UPI ID.",
-            "businessRules": "Validates account existence and net banking ID. Generates and saves UPI ID. Sends UPI ID creation notification."
-        },
-        {
-            "endpoint": "/finance/upi/v1/get-upi-details",
-            "method": "GET",
-            "parameters": [
-                {
-                    "name": "upiRequest",
-                    "type": "GetUPIRequest",
-                    "description": "Details for retrieving UPI information"
-                }
-            ],
-            "responses": {
-                "202": {
-                    "type": "UPIResponse",
-                    "description": "UPI information"
-                }
-            },
-            "dependencies": [
-                "UPIDetailsRepositories"
-            ],
-            "description": "Retrieves UPI information.",
-            "businessRules": "Retrieves and returns UPI information for the given account number and password."
+            "description": "Transfers money between two accounts",
+            "businessRules": "Sender and recipient accounts must exist.  Sufficient balance in sender's account.",
+            "existing_scenarios": []
         }
     ]
 }

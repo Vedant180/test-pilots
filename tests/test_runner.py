@@ -17,7 +17,7 @@ def build_main_project():
     """Builds the main project using Maven."""
     st.write("🔧 Building the main project...")
 
-    result = subprocess.run(["C:/apache-maven-3.9.9/bin/mvn.cmd", "clean", "install"], cwd="D:\\WFHackathon\\au\\src\\data\\Bank-of-Bharat-BOB-master", text=True, capture_output=True)
+    result = subprocess.run(["C:/apache-maven-3.9.9/bin/mvn.cmd", "clean", "install"], cwd="D:\\WFHackathon\\trial\\test-pilots\\src\\data\\Bank-of-Bharat-BOB-master", text=True, capture_output=True)
 
     if result.returncode == 0:
         st.success("✅ Project built successfully!")
@@ -69,11 +69,56 @@ def run_cucumber_tests():
     """Runs Cucumber test scenarios from the automation project."""
     st.write("📝 Running Cucumber test scenarios...")
 
-    # Run Maven test command in automation project
-    result = subprocess.run(CUCUMBER_TEST_COMMAND, cwd=AUTOMATION_PROJECT_DIR, text=True, capture_output=True)
+    # Paths
+    AUTOMATION_PROJECT_DIR = "D:/WFHackathon/trial/test-pilots/src/data/Bank-of-Bharat-BOB-automation-master"
+    cucumber_runner_class = "org.junit.runner.JUnitCore"
+    test_runner = "tuto.cucumber.sample.CucumberTestRunner"
 
+    # JVM Options
+    jvm_options = ["-Xms512m", "-Xmx1024m"]
+    result = subprocess.run(CUCUMBER_TEST_COMMAND, cwd=AUTOMATION_PROJECT_DIR, text=True, capture_output=True)
     if result.returncode == 0:
-        st.success("✅ Cucumber tests executed successfully!")
+        # Run Maven to ensure dependencies are available
+        mvn_command = ["C:/apache-maven-3.9.9/bin/mvn.cmd", "dependency:copy-dependencies", "-DoutputDirectory=target/libs"]
+        mvn_process = subprocess.Popen(mvn_command, cwd=AUTOMATION_PROJECT_DIR, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        mvn_stdout, mvn_stderr = mvn_process.communicate()
+
+        if mvn_process.returncode != 0:
+            st.error("❌ Maven dependency copy failed")
+            st.text_area("Maven Logs", mvn_stderr.decode())
+            return
+
+        # Define classpath correctly
+        classpath = f"{AUTOMATION_PROJECT_DIR}/target/test-classes;{AUTOMATION_PROJECT_DIR}/target/libs/*"
+
+        # Construct the command
+        command = ["java", *jvm_options, "-cp", classpath, cucumber_runner_class, test_runner]
+
+        process = subprocess.Popen(command, cwd=AUTOMATION_PROJECT_DIR, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        stdout, stderr = process.communicate()
+
+        # Display results in Streamlit
+        if process.returncode == 0:
+            st.success("✅ Cucumber tests executed successfully!")
+        else:
+            st.error("❌ Cucumber tests failed. Check logs.")
+        
+        st.text_area("Test Logs", stdout + "\n" + stderr)
+        print(stdout)
+        print(stderr)
     else:
         st.error("❌ Cucumber tests failed. Check logs.")
         st.text_area("Test Logs", result.stdout + "\n" + result.stderr)
+
+    
+
+    
+
+    # Run Maven test command in automation project
+    # result = subprocess.run(CUCUMBER_TEST_COMMAND, cwd=AUTOMATION_PROJECT_DIR, text=True, capture_output=True)
+
+    # if result.returncode == 0:
+    #     st.success("✅ Cucumber tests executed successfully!")
+    # else:
+    #     st.error("❌ Cucumber tests failed. Check logs.")
+    #     st.text_area("Test Logs", result.stdout + "\n" + result.stderr)
