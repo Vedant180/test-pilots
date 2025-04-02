@@ -136,19 +136,43 @@ def extract_existing_features(repo_url):
                     with open(file_path, "r", encoding="utf-8") as f:
                         content = f.readlines()
                     
-                    # Extract scenarios (handling indentation)
-                    for line in content:
-                        line = line.strip()  # Remove spaces/tabs
-                        if line.startswith("Scenario:"):
-                            scenario_name = line.replace("Scenario:", "").strip()
-                            feature_scenarios.append(scenario_name)
-        
+                scenario = []
+                inside_scenario = False  # Flag to track if we are inside a scenario block
+                
+                for line in content:
+                    line = line.strip()  # Remove spaces/tabs
+                    
+                    if line.startswith("Scenario:"):
+                        # If a scenario was being captured, store it before starting a new one
+                        if scenario:
+                            feature_scenarios.append("\n".join(scenario))
+                        
+                        # Start new scenario
+                        scenario = [line]
+                        inside_scenario = True
+                        
+                    elif inside_scenario:
+                        # Keep adding steps to the current scenario until a new scenario starts
+                        if line.startswith("Scenario:") or line.startswith("Feature:"):
+                            # If we hit another scenario/feature, stop capturing
+                            inside_scenario = False
+                        else:
+                            scenario.append(line)
+                
+                # Append last scenario in the file (if it exists)
+                if scenario:
+                    feature_scenarios.append("\n".join(scenario))
+    
         return feature_scenarios
-
+    
     features = read_feature_files(features_dir)
 
-    print(f"✅ Extracted {len(features)} feature scenarios.")
+    print(f"✅ Extracted {len(features)} complete feature scenarios.")
+    for i, scenario in enumerate(features, 1):
+        print(f"\n📜 Scenario {i}:\n{scenario}")
+
     return features
+
 
 def process_repositories(github_repo, framework):
     """

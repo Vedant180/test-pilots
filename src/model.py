@@ -157,29 +157,29 @@ def generate_bdd_scenarios(api_data):
 
     model = GenerativeModel("gemini-1.5-flash")
 
+    all_bdd_features = []
     print(type(api_data))
     for api_detail in api_data["apis"]:
         api_text = json.dumps(api_detail, indent=4)
         response = model.generate_content(f"{system_prompt}\nAPI Data:\n{api_text}")
-        scenario_headlines = re.findall(r"Scenario:\s*(.*)", response.text)
-
-        # Ensure 'existing_scenarios' key exists in api_detail
+    
+        full_feature = response.text.strip()  # Store full feature text
+        all_bdd_features.append(full_feature)
+        # Ensure 'bdd_features' key exists in api_detail
         if "existing_scenarios" not in api_detail:
             api_detail["existing_scenarios"] = []
 
-        # Append new scenarios only if they don’t already exist
-        for scenario in scenario_headlines:
-            if scenario not in json.dumps(api_detail.get("existing_scenarios", [])):
-                api_detail["existing_scenarios"].append(scenario)
+        # Avoid duplicate features
+        if full_feature not in api_detail["existing_scenarios"]:
+            api_detail["existing_scenarios"].append(full_feature)
 
-        
+    print("WITH BDD FEATURES:", json.dumps(api_data, indent=4))
+    
+    store_api_data(api_data)  # Save updated API data
 
-    print("WITH SCENARIOS",api_data)
-    store_api_data(api_data)
+    print("✅ Updated API details with full BDD features!")
 
-    print("✅ Updated API details with existing scenarios!")
-
-    return response.text
+    return "\n\n".join(all_bdd_features)
 
 def generate_step_definitions(feature_file):
 

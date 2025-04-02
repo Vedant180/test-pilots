@@ -79,6 +79,11 @@ if st.button("Compare Commits"):
                 with st.expander(f"🔹 {filename} ({data['status'].upper()})"):
                     if data["patch"]:
                         st.code(data["patch"], language="diff")
-        
+
+    #get the dependencies by querying the neo4j dependency graph and get all corresponding details from chroma db 
+    #then pass the dependencies, api details and the changes to a model as promt and generate new modified bdd
+    dependencies_with_existing_scenarios = query_neo4j_for_dependencies(changes)  #get apis taht could be affected with its existing scenarios
+    # new_modified_bdd_scenarios = generate_modified_bdd(changes,dependencies_with_existing_scenarios) #modify this function
     new_modified_bdd_scenarios = generate_modified_bdd(changes)
+
     st.code(new_modified_bdd_scenarios)

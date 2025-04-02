@@ -7,7 +7,7 @@ def test_repo(repo_url, framework,all_features):
     st.write(f"✅ Successfully processed `{repo_url}`.")
     # dependency_graph = generate_dependency_graph(repo_code)
     api_details,api_dict=generate_api_details(repo_code,all_features)   #json response
-    # print(api_details)
+    print("STORE",api_details)
     store_api_data(api_dict)
     output_path=repo_url.rstrip("/").split("/")[-1] 
     save_to_file(api_details,f"src/outputs/{output_path}.json")

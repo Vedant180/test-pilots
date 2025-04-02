@@ -1,4 +1,5 @@
 import os
+import signal
 import time
 import subprocess
 import requests
@@ -73,10 +74,18 @@ def run_cucumber_tests():
     AUTOMATION_PROJECT_DIR = "D:/WFHackathon/trial/test-pilots/src/data/Bank-of-Bharat-BOB-automation-master"
     cucumber_runner_class = "org.junit.runner.JUnitCore"
     test_runner = "tuto.cucumber.sample.CucumberTestRunner"
+    report_path = f"{AUTOMATION_PROJECT_DIR}/target/cucumber-reports.html"
 
+          
     # JVM Options
     jvm_options = ["-Xms512m", "-Xmx1024m"]
     result = subprocess.run(CUCUMBER_TEST_COMMAND, cwd=AUTOMATION_PROJECT_DIR, text=True, capture_output=True)
+
+    test_results = {
+        "success": [],
+        "failures": []
+    }
+
     if result.returncode == 0:
         # Run Maven to ensure dependencies are available
         mvn_command = ["C:/apache-maven-3.9.9/bin/mvn.cmd", "dependency:copy-dependencies", "-DoutputDirectory=target/libs"]
@@ -101,14 +110,48 @@ def run_cucumber_tests():
         if process.returncode == 0:
             st.success("✅ Cucumber tests executed successfully!")
         else:
+            failure_reasons = []
+            logs = stdout + "\n" + stderr
+            print("LOGS",logs)
+            for line in logs.split("\n"):
+                if "AssertionError" in line or "Exception" in line:  # Adjust based on log patterns
+                    failure_reasons.append(line.strip())
+
+            if failure_reasons:
+                test_results["failures"] = failure_reasons
+
             st.error("❌ Cucumber tests failed. Check logs.")
         
         st.text_area("Test Logs", stdout + "\n" + stderr)
-        print(stdout)
-        print(stderr)
+        print("DICTTTT",test_results)
+        print("STDERR",stderr)
+
+        if os.path.exists(report_path):
+            st.success("✅ Test execution complete! View the test report below:")
+
+            # Embed the report using an iframe
+            with open(report_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+            
+            st.components.v1.html(html_content, height=600, scrolling=True)
+
+        else:
+            st.error("❌ Report not found. Please check if the test execution was successful.")
+
+
+
     else:
         st.error("❌ Cucumber tests failed. Check logs.")
         st.text_area("Test Logs", result.stdout + "\n" + result.stderr)
+    
+    for proc in psutil.process_iter(['pid', 'name']):
+        if "java" in proc.info['name'].lower():
+            try:
+                os.kill(proc.info['pid'], signal.SIGTERM)
+                print(f"🛑 Stopped Java process (PID: {proc.info['pid']})")
+            except Exception as e:
+                print(f"⚠️ Could not stop process {proc.info['pid']}: {e}")
+      
 
     
 

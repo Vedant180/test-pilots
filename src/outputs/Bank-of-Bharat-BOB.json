@@ -7,7 +7,7 @@
                 {
                     "name": "userRequest",
                     "type": "UserRequest",
-                    "description": "Details for creating a new user account"
+                    "description": "Details for creating a new account"
                 }
             ],
             "responses": {
@@ -16,19 +16,25 @@
                     "schema": "UserResponse"
                 },
                 "403": {
-                    "description": "Email or phone number already exists",
+                    "description": "Email or Phone number already exists",
                     "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "AccountDetailsRepositories",
                 "AccountDetailsGenarators",
+                "MapperToResponse",
                 "NotificationsUtility"
             ],
-            "description": "Creates a new user account",
-            "businessRules": "Email and phone number must be unique.  Account details are generated (account number, IFSC code, password).",
+            "description": "API to create a new bank account.",
+            "businessRules": "Email and phone number must be unique. Account number should be generated automatically.",
             "existing_scenarios": [
-                "Successfully create an account"
+                {
+                    "name": "Successfully create an account",
+                    "given": "the user provides valid account details",
+                    "when": "the user sends a request to create an account",
+                    "then": "the account should be created successfully and the response status should be 201"
+                }
             ]
         },
         {
@@ -38,12 +44,12 @@
                 {
                     "name": "accountDetailsRequest",
                     "type": "AccountUpdatingDetailsRequest",
-                    "description": "Details to update an existing account"
+                    "description": "Details to update existing account"
                 }
             ],
             "responses": {
                 "201": {
-                    "description": "Account details updated successfully",
+                    "description": "Account updated successfully",
                     "schema": "AccountUpdateDetailsResponse"
                 },
                 "403": {
@@ -56,8 +62,8 @@
                 "MapperToUpdateResponse",
                 "NotificationsUtility"
             ],
-            "description": "Updates an existing user account details",
-            "businessRules": "Account must exist.  Updates specified fields.",
+            "description": "API to update existing bank account details.",
+            "businessRules": "Account number and IFSC code must match an existing account.",
             "existing_scenarios": []
         },
         {
@@ -67,7 +73,7 @@
                 {
                     "name": "accountDetailsRequest",
                     "type": "AccountDeleteAccountDetailsRequest",
-                    "description": "Details for deleting an account"
+                    "description": "Details of account to delete"
                 }
             ],
             "responses": {
@@ -84,8 +90,8 @@
                 "AccountDetailsRepositories",
                 "NotificationsUtility"
             ],
-            "description": "Deletes a user account",
-            "businessRules": "Account must exist and password must match.",
+            "description": "API to delete a bank account.",
+            "businessRules": "Account number and password must match an existing account.",
             "existing_scenarios": []
         },
         {
@@ -121,8 +127,8 @@
             "dependencies": [
                 "AccountDetailsRepositories"
             ],
-            "description": "Retrieves details of a specific account",
-            "businessRules": "Account must exist and provided credentials must match.",
+            "description": "API to retrieve bank account details.",
+            "businessRules": "Account number, IFSC code, and password must match an existing account.",
             "existing_scenarios": []
         },
         {
@@ -132,7 +138,7 @@
                 {
                     "name": "balanceEnquireyRequest",
                     "type": "BalanceEnquireyRequest",
-                    "description": "Account details for balance enquiry"
+                    "description": "Request for balance enquiry"
                 }
             ],
             "responses": {
@@ -149,8 +155,8 @@
                 "AccountDetailsRepositories",
                 "NotificationsUtility"
             ],
-            "description": "Performs a balance enquiry for a given account",
-            "businessRules": "Account must exist and password must match.",
+            "description": "API to get account balance.",
+            "businessRules": "Account number, IFSC code, and password must match an existing account.",
             "existing_scenarios": []
         },
         {
@@ -169,7 +175,7 @@
                     "schema": "CreditResponse"
                 },
                 "403": {
-                    "description": "Account not found or daily limit exceeded",
+                    "description": "Account not found or insufficient balance",
                     "schema": "ErrorResponses"
                 }
             },
@@ -179,8 +185,8 @@
                 "AccountlLimitReached",
                 "NotificationsUtility"
             ],
-            "description": "Credits money to a user's account",
-            "businessRules": "Account must exist, password must match, daily transaction limit must not be exceeded.",
+            "description": "API to credit money into an account.",
+            "businessRules": "Account number, IFSC code, and password must match an existing account. Daily transaction limit should be checked.",
             "existing_scenarios": []
         },
         {
@@ -199,7 +205,7 @@
                     "schema": "DebitedResponse"
                 },
                 "403": {
-                    "description": "Account not found, insufficient balance, or daily limit exceeded",
+                    "description": "Account not found or insufficient balance",
                     "schema": "ErrorResponses"
                 }
             },
@@ -209,8 +215,8 @@
                 "AccountlLimitReached",
                 "NotificationsUtility"
             ],
-            "description": "Debits money from a user's account",
-            "businessRules": "Account must exist, sufficient balance, password must match, daily transaction limit must not be exceeded.",
+            "description": "API to debit money from an account.",
+            "businessRules": "Account number, IFSC code, and password must match an existing account. Daily transaction limit should be checked. High value transactions should trigger a notification.",
             "existing_scenarios": []
         },
         {
@@ -220,12 +226,12 @@
                 {
                     "name": "addMoneyFromAccountToUPIRequest",
                     "type": "AddMoneyFromAccountToUPIRequest",
-                    "description": "Details for paying from UPI"
+                    "description": "Details for UPI payment"
                 }
             ],
             "responses": {
                 "202": {
-                    "description": "Payment from UPI successful",
+                    "description": "UPI payment successful",
                     "schema": "AddMoneyFromAccountToUPIResponse"
                 },
                 "403": {
@@ -238,8 +244,8 @@
                 "UPIDetailsRepositories",
                 "AccountlLimitReached"
             ],
-            "description": "Transfers money from a bank account to a UPI account",
-            "businessRules": "Account and UPI ID must exist, sufficient balance.",
+            "description": "API to make a payment using UPI.",
+            "businessRules": "UPI ID and account number must be valid. Sufficient balance must be available.",
             "existing_scenarios": []
         },
         {
@@ -249,7 +255,7 @@
                 {
                     "name": "addMoneyToUPIFromAccountRequest",
                     "type": "AddMoneyToUPIFromAccountRequest",
-                    "description": "Details for adding money to UPI"
+                    "description": "Details for adding money to UPI from bank account"
                 }
             ],
             "responses": {
@@ -267,8 +273,8 @@
                 "UPIDetailsRepositories",
                 "AccountlLimitReached"
             ],
-            "description": "Adds money to a UPI account from a bank account",
-            "businessRules": "Account and UPI ID must exist, sufficient balance.",
+            "description": "API to add money to UPI account from bank account.",
+            "businessRules": "Account number, password, and UPI ID must be valid.",
             "existing_scenarios": []
         },
         {
@@ -278,12 +284,12 @@
                 {
                     "name": "updateAmountManually",
                     "type": "UpdateAmountManually",
-                    "description": "Details for manually updating account balance"
+                    "description": "Details for updating amount manually"
                 }
             ],
             "responses": {
                 "202": {
-                    "description": "Account balance updated successfully",
+                    "description": "Amount updated successfully",
                     "schema": "UpdateAmountResponse"
                 },
                 "403": {
@@ -294,8 +300,8 @@
             "dependencies": [
                 "AccountDetailsRepositories"
             ],
-            "description": "Manually updates account balance (likely for internal use)",
-            "businessRules": "Account must exist.",
+            "description": "API to update account balance manually (e.g., ATM deposit).",
+            "businessRules": "Account number must be valid.",
             "existing_scenarios": []
         },
         {
@@ -310,11 +316,11 @@
             ],
             "responses": {
                 "202": {
-                    "description": "UPI ID created successfully",
+                    "description": "UPI created successfully",
                     "schema": "UPIResponse"
                 },
                 "403": {
-                    "description": "Account not found, UPI ID already exists, or NetBanking ID is missing",
+                    "description": "Account not found, UPI already exists, or NetBanking ID missing",
                     "schema": "ErrorResponses"
                 }
             },
@@ -325,8 +331,8 @@
                 "NetBankingRepositories",
                 "NotificationsUtility"
             ],
-            "description": "Creates a UPI ID for a user",
-            "businessRules": "Account must exist, NetBanking ID must exist, UPI ID must be unique.",
+            "description": "API to create a UPI ID.",
+            "businessRules": "Account must exist and have a NetBanking ID. UPI ID must be unique.",
             "existing_scenarios": []
         },
         {
@@ -336,7 +342,7 @@
                 {
                     "name": "upiRequest",
                     "type": "GetUPIRequest",
-                    "description": "UPI details request"
+                    "description": "Request to get UPI details"
                 }
             ],
             "responses": {
@@ -345,15 +351,15 @@
                     "schema": "UPIResponse"
                 },
                 "403": {
-                    "description": "Details Not Found",
+                    "description": "Details not found",
                     "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "UPIDetailsRepositories"
             ],
-            "description": "Retrieves UPI details for a user",
-            "businessRules": "Account must exist and password must be correct.",
+            "description": "API to retrieve UPI details.",
+            "businessRules": "Account number and password must match an existing account.",
             "existing_scenarios": []
         },
         {
@@ -382,8 +388,8 @@
                 "InternetBankingIdGenerator",
                 "NotificationsUtility"
             ],
-            "description": "Creates a NetBanking ID for a user",
-            "businessRules": "Account must exist, NetBanking ID must be unique.",
+            "description": "API to create a NetBanking ID.",
+            "businessRules": "Account must exist. NetBanking ID must be unique.",
             "existing_scenarios": []
         },
         {
@@ -393,7 +399,7 @@
                 {
                     "name": "netBankingRequest",
                     "type": "GetNetBankingRequest",
-                    "description": "NetBanking details request"
+                    "description": "Request to get NetBanking details"
                 }
             ],
             "responses": {
@@ -402,15 +408,15 @@
                     "schema": "NetBankingResponse"
                 },
                 "403": {
-                    "description": "Details Not Found",
+                    "description": "Details not found",
                     "schema": "ErrorResponses"
                 }
             },
             "dependencies": [
                 "NetBankingRepositories"
             ],
-            "description": "Retrieves NetBanking details for a user",
-            "businessRules": "Account must exist.",
+            "description": "API to retrieve NetBanking details.",
+            "businessRules": "Account number and IFSC code must match an existing account.",
             "existing_scenarios": []
         },
         {
@@ -425,7 +431,7 @@
             ],
             "responses": {
                 "202": {
-                    "description": "Transaction history retrieved successfully",
+                    "description": "Transaction details retrieved successfully",
                     "schema": "List<TransactionResponse>"
                 },
                 "403": {
@@ -437,8 +443,8 @@
                 "TransactionHistoryRepository",
                 "TransactionToTransactionResponse"
             ],
-            "description": "Retrieves transaction history for a given account",
-            "businessRules": "Account must exist.",
+            "description": "API to retrieve transaction history for an account.",
+            "businessRules": "Account number must match an existing account.",
             "existing_scenarios": []
         },
         {
@@ -448,16 +454,16 @@
                 {
                     "name": "transferMoneyRequest",
                     "type": "TransferMoneyRequest",
-                    "description": "Money transfer request"
+                    "description": "Fund transfer request"
                 }
             ],
             "responses": {
                 "202": {
-                    "description": "Money transfer successful",
+                    "description": "Money transferred successfully",
                     "schema": "TransferMoneyResponse"
                 },
                 "403": {
-                    "description": "Sender or recipient account not found",
+                    "description": "Account not found or insufficient balance",
                     "schema": "ErrorResponses"
                 }
             },
@@ -465,8 +471,8 @@
                 "AccountDetailsRepositories",
                 "NotificationsUtility"
             ],
-            "description": "Transfers money between two accounts",
-            "businessRules": "Sender and recipient accounts must exist.  Sufficient balance in sender's account.",
+            "description": "API to transfer money between accounts.",
+            "businessRules": "Both sender and recipient accounts must exist. Sender must have sufficient balance. High-value transfers should trigger a notification.",
             "existing_scenarios": []
         }
     ]

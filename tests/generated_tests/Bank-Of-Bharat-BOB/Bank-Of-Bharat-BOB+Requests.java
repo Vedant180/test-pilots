@@ -2,70 +2,83 @@
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import org.json.JSONObject;
 
 import static io.restassured.RestAssured.given;
 
 public class WalletRequests {
 
-    private String apiBaseUrl = "YOUR_API_ENDPOINT"; // Replace with your actual API base URL
+    private String baseUri;
 
-    public String transferMoney(String senderAccountNumber, String recipientAccountNumber, int amount) {
-        RequestSpecification request = RestAssured.given()
-                .contentType("application/json")
-                .body(new JSONObject()
-                        .put("senderAccountNumber", senderAccountNumber)
-                        .put("recipientAccountNumber", recipientAccountNumber)
-                        .put("amount", amount)
-                        .toString());
-
-        Response response = request.post(apiBaseUrl + "/transfer"); // Adjust the endpoint as needed
-
-        return response.asString();
+    public WalletRequests(String baseUri) {
+        this.baseUri = baseUri;
+        RestAssured.baseURI = baseUri;
     }
 
 
-    public int getStatusCode() {
-        return RestAssured.last().getStatusCode();
+    public Response post(String endpoint, Object requestBody) {
+        RequestSpecification request = given().contentType("application/json");
+        if (requestBody != null) {
+            request.body(requestBody);
+        }
+        return request.post(endpoint);
     }
 
-    // Add other API request methods as needed.  Example for getting balance:
-    public String getBalance(String accountNumber){
-        RequestSpecification request = RestAssured.given()
-                .contentType("application/json")
-                .param("accountNumber", accountNumber); //Using query parameter for account number.  Adjust as needed.
+    public Response put(String endpoint, Object requestBody) {
+        RequestSpecification request = given().contentType("application/json");
+        if (requestBody != null) {
+            request.body(requestBody);
+        }
+        return request.put(endpoint);
+    }
 
-        Response response = request.get(apiBaseUrl + "/balance"); // Adjust the endpoint as needed
+    public Response delete(String endpoint, Object requestBody) {
+        RequestSpecification request = given().contentType("application/json");
+        if (requestBody != null) {
+            request.body(requestBody);
+        }
+        return request.delete(endpoint);
+    }
 
-        return response.asString();
+    public Response get(String endpoint, String accountNumber, String ifscCode, String password) {
+        // Construct the full endpoint with parameters
+        String fullEndpoint = String.format("%s/%s/%s/%s", endpoint, accountNumber, ifscCode, password);
+        return given().get(fullEndpoint);
+
+    }
+
+    public Response get(String endpoint, Object requestBody) {
+        RequestSpecification request = given().contentType("application/json");
+        if (requestBody != null) {
+            request.body(requestBody);
+        }
+        return request.get(endpoint);
+    }
+
+    public Response getBalance(Object requestBody) {
+        RequestSpecification request = given().contentType("application/json");
+        if (requestBody != null) {
+            request.body(requestBody);
+        }
+        //  Replace with actual balance endpoint.  This is a placeholder.
+        return request.get("/finance/v1/bank/v4/bharat/balance");
     }
 
 
+    public Response debit(String endpoint, Object debitCredential) {
+        RequestSpecification request = given().contentType("application/json");
+        if (debitCredential != null) {
+            request.body(debitCredential);
+        }
+        return request.post(endpoint); // Assuming debit is a POST request. Adjust as needed.
+    }
+
+    public Response makeUPIPayment(Object upiPaymentRequest) {
+        RequestSpecification request = given().contentType("application/json");
+        if (upiPaymentRequest != null) {
+            request.body(upiPaymentRequest);
+        }
+        // Replace with actual UPI payment endpoint
+        return request.post("/finance/v1/upi/v1/pay");
+    }
 }
 ```
-
-**To use this with your existing code:**
-
-1.  **Replace `YOUR_API_ENDPOINT`:** Update `apiBaseUrl` in `WalletRequests.java` with the correct base URL of your API.  For example: `"http://localhost:8080/api/v1"`.
-2.  **Adjust Endpoints:** Modify the endpoint paths (e.g., `/transfer`, `/balance`) in the `transferMoney` and `getBalance` methods to accurately reflect the routes in your API.
-3.  **Add Dependencies:** Make sure you have the `io.rest-assured` dependency in your `pom.xml`:
-
-```xml
-<dependency>
-    <groupId>io.rest-assured</groupId>
-    <artifactId>rest-assured</artifactId>
-    <version>5.3.0</version> <!-- Use the latest version -->
-    <scope>test</scope>
-</dependency>
-<dependency>
-    <groupId>org.json</groupId>
-    <artifactId>json</artifactId>
-    <version>20230618</version>
-</dependency>
-
-```
-
-4.  **Replace `Requests` with `WalletRequests`:** In your `StepDefinitions.java`, change `requests = new Requests();` to `requests = new WalletRequests();`.
-
-
-This improved `WalletRequests.java` leverages REST-assured for cleaner, more maintainable, and more efficient API interaction.  The example `getBalance` method shows how easily you can add more API calls as needed. Remember to handle potential exceptions (e.g., `IOException`) appropriately in your `StepDefinitions` or `WalletRequests` class, as needed.  Consider adding more robust error handling in your `WalletRequests` methods to check for various HTTP status codes and provide more informative error messages.
